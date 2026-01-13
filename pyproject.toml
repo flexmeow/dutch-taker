@@ -1,0 +1,45 @@
+[project]
+name = "dutch-taker"
+version = "0.1.0"
+description = "Takes Flex's Dutch Auctions"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "ruff==0.14.11",
+    "mypy==1.19.1",
+    "python-dotenv==1.2.0",
+    "python-telegram-bot==22.5",
+    "eth-ape==0.8.45",
+    "silverback==0.7.35",
+    "ape-etherscan==0.8.5",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["bot*"]
+exclude = ["assets*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+lint.select = ["E", "F", "I", "W"]  # pycodestyle, pyflakes, isort, and warnings
+fix = true
+exclude = ["__pypackages__"]
+lint.ignore = ['E501']
+
+[tool.ruff.format]
+quote-style = "double"
+docstring-code-format = true
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+strict = true
+check_untyped_defs = true
+disallow_untyped_defs = true
+warn_unused_ignores = true
+disable_error_code = ["misc"]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
