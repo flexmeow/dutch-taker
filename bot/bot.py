@@ -144,8 +144,6 @@ for auction, _ in auctions():
 
 @bot.on_(chain.blocks)
 async def check_auctions_and_take(block: BlockAPI, context: Annotated[Context, TaskiqDepends()]) -> None:
-    for auction, taker in auctions():
-        execute_take(taker, 0)
     state = load_state()
     if not state:
         return
