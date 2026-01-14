@@ -18,7 +18,7 @@ def get_signer() -> Any:
 
     try:
         account = import_account_from_private_key(ACCOUNT_ALIAS, VERY_SECRET_PASSWORD, private_key)
-    except ValueError:
+    except Exception:
         account = accounts.load(ACCOUNT_ALIAS)
 
     account.set_autosign(True, passphrase=VERY_SECRET_PASSWORD)
@@ -29,7 +29,7 @@ def get_signer() -> Any:
 def execute_take(taker: Any, auction_id: int) -> None:
     try:
         signer = get_signer()
-        taker.take(auction_id, sender=signer)
+        taker.take(auction_id, sender=signer, confirmations_required=0)
     except ContractLogicError as e:
         print(f"execute_take: {e}")
 
