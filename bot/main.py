@@ -59,11 +59,18 @@ async def on_auction_take(bot: TinyBot, log: object) -> None:
     buy_token = bot.w3.eth.contract(address=auction.functions.buy_token().call(), abi=ERC20_ABI)
     sell_symbol, sell_decimals, buy_symbol, buy_decimals = multicall(
         bot.w3,
-        [sell_token.functions.symbol(), sell_token.functions.decimals(), buy_token.functions.symbol(), buy_token.functions.decimals()],
+        [
+            sell_token.functions.symbol(),
+            sell_token.functions.decimals(),
+            buy_token.functions.symbol(),
+            buy_token.functions.decimals(),
+        ],
     )
 
     status = "fully taken" if remaining == 0 else "partially taken"
-    remaining_line = "" if remaining == 0 else f"<b>Remaining:</b> {remaining / (10**sell_decimals):.4f} {sell_symbol}\n"
+    remaining_line = (
+        "" if remaining == 0 else f"<b>Remaining:</b> {remaining / (10**sell_decimals):.4f} {sell_symbol}\n"
+    )
     await notify_group_chat(
         f"🎯 <b>Auction {status}!</b>\n\n"
         f"<b>Auction ID:</b> {auction_id}\n"
