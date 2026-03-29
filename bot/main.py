@@ -1,11 +1,10 @@
 import os
 
-from tinybot import DEV_GROUP_CHAT_ID, TinyBot, multicall, notify_group_chat
+from tinybot import DEV_GROUP_CHAT_ID, TinyBot, notify_group_chat
 from web3.contract import Contract
 
 from bot.config import (
     AUCTION_ABI,
-    ERC20_ABI,
     INTERVAL,
     PROFIT_BUFFER,
     TAKER_ABI,
@@ -14,7 +13,6 @@ from bot.config import (
     explorer_tx_url,
     get_all_auctions,
     network,
-    safe_name,
     taker_contract_addr,
 )
 from bot.swap import get_swap_route
@@ -25,61 +23,7 @@ from bot.swap import get_swap_route
 
 
 async def on_auction_kick(bot: TinyBot, log: object) -> None:
-    auction_addr: str = log.address
-    auction_id: int = log.args.auction_id
-    kick_amount: int = log.args.kick_amount
-
-    bot.state.add_item(auction_addr, str(auction_id))
-
-    auction = bot.w3.eth.contract(address=auction_addr, abi=AUCTION_ABI)
-    sell_token = bot.w3.eth.contract(address=auction.functions.sell_token().call(), abi=ERC20_ABI)
-    symbol, decimals = multicall(bot.w3, [sell_token.functions.symbol(), sell_token.functions.decimals()])
-
-    re_kick = "Re-Kicked" if log.args.is_re_kick else "Kicked"
-    emoji = "🚨" if log.args.is_re_kick else "🥾"
-
-    await notify_group_chat(
-        f"{emoji} <b>Auction {re_kick}</b>\n\n"
-        f"<b>Auction ID:</b> {auction_id}\n"
-        f"<b>Kick Amount:</b> {kick_amount / (10**decimals):.4f} {symbol}\n\n"
-        f"<a href='{explorer_tx_url()}{log.transactionHash.hex()}'>🔗 View Transaction</a>"
-    )
-
-
-async def on_auction_take(bot: TinyBot, log: object) -> None:
-    auction_addr: str = log.address
-    auction_id: int = log.args.auction_id
-    take_amount: int = log.args.take_amount
-    remaining: int = log.args.remaining_amount
-    needed_amount: int = log.args.needed_amount
-    tx_origin: str = bot.w3.eth.get_transaction(log.transactionHash)["from"]
-
-    auction = bot.w3.eth.contract(address=auction_addr, abi=AUCTION_ABI)
-    sell_token = bot.w3.eth.contract(address=auction.functions.sell_token().call(), abi=ERC20_ABI)
-    buy_token = bot.w3.eth.contract(address=auction.functions.buy_token().call(), abi=ERC20_ABI)
-    sell_symbol, sell_decimals, buy_symbol, buy_decimals = multicall(
-        bot.w3,
-        [
-            sell_token.functions.symbol(),
-            sell_token.functions.decimals(),
-            buy_token.functions.symbol(),
-            buy_token.functions.decimals(),
-        ],
-    )
-
-    status = "fully taken" if remaining == 0 else "partially taken"
-    remaining_line = (
-        "" if remaining == 0 else f"<b>Remaining:</b> {remaining / (10**sell_decimals):.4f} {sell_symbol}\n"
-    )
-    await notify_group_chat(
-        f"🎯 <b>Auction {status}!</b>\n\n"
-        f"<b>Auction ID:</b> {auction_id}\n"
-        f"<b>Take Amount:</b> {take_amount / (10**sell_decimals):.4f} {sell_symbol}\n"
-        f"<b>Paid:</b> {needed_amount / (10**buy_decimals):.4f} {buy_symbol}\n"
-        f"{remaining_line}"
-        f"<b>Taker:</b> {safe_name(bot.w3, tx_origin)}\n\n"
-        f"<a href='{explorer_tx_url()}{log.transactionHash.hex()}'>🔗 View Transaction</a>"
-    )
+    bot.state.add_item(log.address, str(log.args.auction_id))
 
 
 # =============================================================================
@@ -186,17 +130,9 @@ async def run() -> None:
         abi=AUCTION_ABI,
         handler=on_auction_kick,
     )
-    bot.listen(
-        poll_interval=INTERVAL,
-        event="AuctionTake",
-        addresses=auction_addrs,
-        abi=AUCTION_ABI,
-        handler=on_auction_take,
-    )
 
-    # # # TEST: replay AuctionKick
+    # # TEST: replay AuctionKick
     # await bot.replay("on_auction_kick", from_block=24750789, to_block=24750791)
-    # await bot.replay("on_auction_take", from_block=24750633, to_block=24750635)
 
     bot.every(INTERVAL, check_auctions_and_take)
 
